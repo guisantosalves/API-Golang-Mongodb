@@ -16,10 +16,10 @@ import (
 )
 
 // like the model
-type Person struct {
-	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	FirstName string             `json:"FirstName,omitempty" bson:"FirstName,omitempty"`
-	LastName  string             `json:"LastName,omitempty" bson:"LastName,omitempty"`
+type User struct {
+	ID    primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name  string             `json:"FirstName,omitempty" bson:"FirstName,omitempty"`
+	Email string             `json:"LastName,omitempty" bson:"LastName,omitempty"`
 }
 
 var client *mongo.Client
@@ -72,11 +72,12 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := map[string]interface{}{}
 
-	err = json.NewDecoder(r.Body).Decode(data)
+	err = json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
+	fmt.Println(data)
 	// := is for declaration + assignment, whereas = is for assignment only
 	switch r.Method {
 	case "POST":
