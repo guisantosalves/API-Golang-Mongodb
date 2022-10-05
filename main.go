@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
-	"time"
 
+	"github.com/guisantosalves/mongodb-go/controllers"
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -25,6 +26,11 @@ var client *mongo.Client
 
 func main() {
 
+	// w -> response, r -> resquest
+	handledefault := func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprintf(w, "eaeae")
+	}
+
 	// load dotenv
 	err := godotenv.Load()
 	if err != nil {
@@ -32,30 +38,65 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
+	// listing the databases
+	// databases, err := client.ListDatabaseNames(ctx, bson.M{})
+	// if err != nil { //força a ser nulo
+	// 	log.Fatal(err)
+	// }
+
+	// fmt.Println(databases)
+
+	http.HandleFunc("/", handledefault)
+	http.HandleFunc("/api/v1/user", requestHandler)
+	http.ListenAndServe(":8080", nil)
+}
+
+// w -> response, r  -> request
+func requestHandler(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-type", "application/json")
+
+	// making the key -> string and value -> any
+	response := map[string]interface{}{}
+
+	ctx := context.Background()
+
 	apiString := os.Getenv("API_KEY")
 
-	// conectou, tive que gerar nova senha no atlas
-	client, err := mongo.NewClient(options.Client().ApplyURI(apiString))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(apiString))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err.Error())
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	collection := client.Database("store").Collection("custumer")
 
-	err = client.Connect(ctx)
+	data := map[string]interface{}{}
+
+	err = json.NewDecoder(r.Body).Decode(data)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err.Error())
 	}
 
+	// := is for declaration + assignment, whereas = is for assignment only
+	switch r.Method {
+	case "POST":
+		response, err = controllers.Createuser(collection, ctx, data)
+		// case "GET":
+		// 	response, err = getRecords(collection, ctx, data)
+		// case "PUT":
+		// 	response, err = updateRecord(collection, ctx, data)
+		// case "DELETE":
+		// 	response, err = deleteRecord(collection, ctx, data)
+	}
+	if err != nil {
+		response = map[string]interface{}{"error": err.Error()}
+	}
+
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(response); err != nil {
+		fmt.Println(err.Error())
+	}
 	// qualquer instrução precedida pela palavra-chave defer não é invocada até o final da função na qual a defer tiver sido usada
 	defer client.Disconnect(ctx)
-
-	// listing the databases
-	databases, err := client.ListDatabaseNames(ctx, bson.M{})
-	if err != nil { //força a ser nulo
-		log.Fatal(err)
-	}
-
-	fmt.Println(databases)
-
 }
