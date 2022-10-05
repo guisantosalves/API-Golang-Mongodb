@@ -72,22 +72,22 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := map[string]interface{}{}
 
+	// we need to pass the reference of the map data
 	err = json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
-	fmt.Println(data)
 	// := is for declaration + assignment, whereas = is for assignment only
 	switch r.Method {
 	case "POST":
 		response, err = controllers.Createuser(collection, ctx, data)
-		// case "GET":
-		// 	response, err = getRecords(collection, ctx, data)
-		// case "PUT":
-		// 	response, err = updateRecord(collection, ctx, data)
-		// case "DELETE":
-		// 	response, err = deleteRecord(collection, ctx, data)
+	case "GET":
+		response, err = controllers.Getusers(collection, ctx)
+	case "PUT":
+		response, err = controllers.UpdateOne(collection, ctx, data)
+	case "DELETE":
+		response, err = controllers.Deleteuser(collection, ctx, data)
 	}
 	if err != nil {
 		response = map[string]interface{}{"error": err.Error()}
@@ -101,3 +101,10 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	// qualquer instrução precedida pela palavra-chave defer não é invocada até o final da função na qual a defer tiver sido usada
 	defer client.Disconnect(ctx)
 }
+
+// {
+// 	"_id": "633dd3b2f9cdf4216f342396"
+// },
+// {
+// 	"_id": "633dd63203d0e8b00eee9eed"
+// },
